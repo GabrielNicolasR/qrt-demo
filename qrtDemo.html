@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="css/components/header.css">
+  <link rel="stylesheet" href="css/components/button.css">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/root.css">
+  <link rel="stylesheet" href="css/style.css">
+
+  <title>MVP — Modelo de Aderência de QRTs</title>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">QRT</div>
+        <div>
+          <h1>MVP — Modelo de Aderência de QRTs</h1>
+          <p class="lead">Reduza retrabalho e encamine tickets ao time certo na primeira vez.</p>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <small class="muted">Demo interativa • Protótipo comercial</small>
+      </div>
+    </header>
+
+    <main>
+      <section>
+        <div class="card hero">
+          <h2>O problema</h2>
+          <p class="muted">Usuários abrem chamados no canal errado → triagem manual, atraso e custo. Nosso MVP usa
+            checklist + texto do ticket para sugerir automaticamente o QRT com maior aderência (probabilidade).</p>
+
+          <div class="metrics">
+            <div class="metric"><b>↓30%</b><span class="muted">Tempo de triagem</span></div>
+            <div class="metric"><b>↑40%</b><span class="muted">Tickets alocados corretamente</span></div>
+            <div class="metric"><b>Top‑3</b><span class="muted">Prec. de recomendação</span></div>
+          </div>
+
+          <div class="features">
+            <div class="feature"><b>Extrai</b>
+              <div class="muted">Dados do Jira & Excel</div>
+            </div>
+            <div class="feature"><b>Checklist Inteligente</b>
+              <div class="muted">Respostas geram features de alta qualidade</div>
+            </div>
+            <div class="feature"><b>Probabilidades</b>
+              <div class="muted">Output como % de aderência por QRT</div>
+            </div>
+            <div class="feature"><b>Integração</b>
+              <div class="muted">Webhook para Jira e notificação no Teams</div>
+            </div>
+          </div>
+
+          <div class="why">
+            <strong>Como funciona (resumo):</strong>
+            <p class="muted">Recebe título/descrição e respostas do checklist → pré-processa texto + metadados → modelo
+              (TF-IDF + XGBoost ou BERT) → predict_proba → exibe top‑3 QRTs com justificativas (palavras-chave + itens
+              do checklist).</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <h3>Demo — Experimente um ticket</h3>
+          <label for="title">Título do chamado</label>
+          <input id="title" type="text" placeholder="Ex.: Erro de timeout em integração com gateway" />
+
+          <label for="desc" style="margin-top:8px">Descrição</label>
+          <textarea id="desc" rows="4" placeholder="Cole aqui a descrição do chamado..."></textarea>
+
+          <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+            <label style="margin:0">Produto</label>
+            <select id="product">
+              <option class="option">Escolha...</option>
+              <option class="option">Portal</option>
+              <option class="option">API</option>
+              <option class="option">Billing</option>
+            </select>
+            <label style="margin:0">Impacto</label>
+            <select id="impact">
+              <option class="option">Baixo</option>
+              <option class="option">Médio</option>
+              <option class="option">Alto</option>
+            </select>
+          </div>
+
+          <div class="checklist">
+            <div class="check"><input type="checkbox" id="c1" /><label for="c1" style="margin:0">O problema ocorre em
+                produção</label></div>
+            <div class="check"><input type="checkbox" id="c2" /><label for="c2" style="margin:0">Afeta múltiplos
+                usuários</label></div>
+            <div class="check"><input type="checkbox" id="c3" /><label for="c3" style="margin:0">Há stacktrace ou
+                log</label></div>
+            <div class="check"><input type="checkbox" id="c4" /><label for="c4" style="margin:0">Envolve integração
+                externa</label></div>
+            <div class="check"><input type="checkbox" id="c5" /><label for="c5" style="margin:0">Regras de negócio
+                impactadas</label></div>
+            <div class="check"><input type="checkbox" id="c6" /><label for="c6" style="margin:0">Dados
+                inconsistentes</label></div>
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+            <button class="btn" id="analyze">Analisar</button>
+            <button class="btn" id="reset" style="background:#1f2937;color:#e6eef6">Limpar</button>
+            <div class="muted" style="margin-left:auto">Protótipo — resultados estimados</div>
+          </div>
+
+          <div class="prediction" id="prediction" style="display:none">
+            <h4>Recomendação</h4>
+            <div class="qrt-row">
+              <div>
+                <strong id="topName">QRT‑Infra</strong>
+                <div class="muted" id="topReasons">motivos: 'timeout', produção, integração</div>
+              </div>
+              <div style="width:220px">
+                <div class="bar">
+                  <div class="bar-fill" id="topBar"></div>
+                </div>
+                <div style="margin-top:6px;font-weight:700;text-align:right" id="topPct">78%</div>
+              </div>
+            </div>
+
+            <div class="top3" id="top3"></div>
+
+            <div style="margin-top:12px;display:flex;gap:8px">
+              <button class="btn">Encaminhar automaticamente</button>
+              <button class="btn" style="background:#0ea5a9;color:#01211a">Sugerir ao usuário</button>
+              <button class="btn" style="background:#111827;color:#e6eef6">Abrir triagem</button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <aside class="right">
+        <div class="card">
+          <h3>Arquitetura (não fixa)</h3>
+          <p class="muted">ETL (Jira/Excel) → Treino (TF‑IDF / XGBoost ou Transformer) → Serviço de inferência (FastAPI)
+            → Jira/Teams.</p>
+
+          <h4 style="margin-top:12px">Benefícios</h4>
+          <ul class="muted">
+            <li>Menos custo operacional</li>
+            <li>Alocação correta na primeira tentativa, diminuindo transtornos</li>
+            <li>Coleta de mais informações</li>
+          </ul>
+
+          <h4 style="margin-top:12px">QRTs de exemplo</h4>
+          <div class="muted">QRT‑Infra, QRT‑DB, QRT‑Negócio</div>
+
+        </div>
+
+
+      </aside>
+    </main>
+
+    <footer>
+      <div>0.1</div>
+    </footer>
+  </div>
+  <script src="js/index.js"></script>
+
+</html>
