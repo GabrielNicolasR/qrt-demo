@@ -1,96 +1,218 @@
-// Heurística simples para demo — não substitui modelo real
-const qrtNames = ['QRT‑Infra', 'QRT‑DB', 'QRT‑Negócio'];
-function scoreFromText(title, desc) {
-    const txt = (title + ' ' + desc).toLowerCase();
-    return {
-        infra: (txt.match(/timeout|gateway|integração|api|http|latency|latência|erro 504|502|timeout/) || []).length,
-        db: (txt.match(/sql|query|select|insert|deadlock|db|database|inconsist|inconsistência|dados/) || []).length,
-        negocio: (txt.match(/regra|calculo|faturamento|cobrança|negócio|regras|contrato|credito/) || []).length
-    };
-}
+const subcategorias = {
+    'erro-cotas': [
+        'Cotas não aparecem no sistema',
+        'Valor de cotas incorreto',
+        'Cotas duplicadas',
+        'Erro no cálculo de cotas',
+        'Outro'
+    ],
+    'erro-boletar': [
+        'Boleta não gerada',
+        'Dados incorretos na boleta',
+        'Erro ao enviar boleta',
+        'Boleta duplicada',
+        'Outro'
+    ],
+    'gestor-sem-permissao': [
+        'Não consegue acessar fundo',
+        'Permissão de visualização negada',
+        'Erro ao editar dados',
+        'Permissões não atualizadas',
+        'Outro'
+    ],
+    'erro-integracao': [
+        'Integração não funciona',
+        'Dados não sincronizam',
+        'Timeout na integração',
+        'Erro de autenticação',
+        'Outro'
+    ],
+    'erro-participantes': [
+        'Participante não cadastrado',
+        'Dados do participante incorretos',
+        'Erro ao adicionar participante',
+        'Participante duplicado',
+        'Outro'
+    ],
+    'validacao-procuracoes': [
+        'Procuração não reconhecida',
+        'Documento inválido',
+        'Prazo de procuração vencido',
+        'Dados inconsistentes',
+        'Outro'
+    ],
+    'extrato-financeiro': [
+        'Extrato não gerado',
+        'Valores incorretos no extrato',
+        'Extrato incompleto',
+        'Erro ao exportar extrato',
+        'Outro'
+    ]
+};
 
-function analyze() {
-    const title = document.getElementById('title').value || '';
-    const desc = document.getElementById('desc').value || '';
-    const c1 = document.getElementById('c1').checked;
-    const c2 = document.getElementById('c2').checked;
-    const c3 = document.getElementById('c3').checked;
-    const c4 = document.getElementById('c4').checked;
-    const c5 = document.getElementById('c5').checked;
-    const c6 = document.getElementById('c6').checked;
+const qrtMapping = {
+    'erro-cotas': { qrt: 'QRT-Fundos', prob: 95 },
+    'erro-boletar': { qrt: 'QRT-Fundos', prob: 95 },
+    'erro-integracao': { qrt: 'QRT-Fundos', prob: 90 },
+    'gestor-sem-permissao': { qrt: 'QRT-Fundos', prob: 75 },
+    'erro-participantes': { qrt: 'QRT-Investidor', prob: 92 },
+    'validacao-procuracoes': { qrt: 'QRT-Investidor', prob: 95 },
+    'extrato-financeiro': { qrt: 'QRT-Banking', prob: 98 }
+};
 
-    const t = scoreFromText(title, desc);
-    // base scores from text
-    let scores = { infra: 1 + t.infra * 2, db: 1 + t.db * 2, negocio: 1 + t.negocio * 2 };
-    // checklist boosts
-    if (c4) scores.infra += 3; // integração
-    if (c1) scores.infra += 2; // produção
-    if (c3) { scores.infra += 1; scores.db += 1 }
-    if (c6) scores.db += 3; // dados inconsistentes
-    if (c5) scores.negocio += 3; // regras negocio
-    if (c2) { scores.infra += 1; scores.db += 1; scores.negocio += 1 }
+// Máscara de CNPJ
+document.getElementById('cnpj').addEventListener('input', function (e) {
+    let value = e.target.value.replace(/\D/g, '');
 
-    // product/impact small heuristic
-    const prod = document.getElementById('product').value;
-    const impact = document.getElementById('impact').value;
-    if (prod === 'Billing') scores.negocio += 2;
-    if (impact === 'Alto') { scores.infra += 1; scores.db += 1; scores.negocio += 1 }
+    if (value.length <= 14) {
+        value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+        value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        value = value.replace(/(\d{4})(\d)/, '$1-$2');
+    }
 
-    // normalize to percentages
-    const arr = [scores.infra, scores.db, scores.negocio];
-    const sum = arr.reduce((a, b) => a + b, 0);
-    const pct = arr.map(x => Math.round((x / sum) * 100));
-
-    // reasons top
-    const reasons = [];
-    if (t.infra) reasons.push("palavra-chave infra: " + (t.infra > 0 ? "detectada" : ""));
-
-    document.getElementById('prediction').style.display = 'block';
-    // sort top
-    const items = [
-        { name: 'QRT‑Infra', pct: pct[0], score: scores.infra },
-        { name: 'QRT‑DB', pct: pct[1], score: scores.db },
-        { name: 'QRT‑Negócio', pct: pct[2], score: scores.negocio }
-    ].sort((a, b) => b.pct - a.pct);
-
-    document.getElementById('topName').innerText = items[0].name;
-    document.getElementById('topPct').innerText = items[0].pct + '%';
-    document.getElementById('topBar').style.width = items[0].pct + '%';
-    // build reasons
-    const detected = [];
-    if (c4) detected.push('integração');
-    if (c1) detected.push('produção');
-    if (c3) detected.push('logs/stacktrace');
-    if (c5) detected.push('regras de negócio');
-    if (c6) detected.push('dados inconsistentes');
-    const words = (title + ' ' + desc).toLowerCase();
-    const kw = [];
-    if (words.match(/timeout|gateway/)) kw.push('timeout/gateway');
-    if (words.match(/sql|query|database|inconsist/)) kw.push('query/inconsistência');
-    if (words.match(/regra|faturamento|cobrança/)) kw.push('regras de negócio');
-
-    const reasonText = (kw.concat(detected)).slice(0, 4).join(', ');
-    document.getElementById('topReasons').innerText = 'motivos: ' + (reasonText || 'baseado em checklist e texto');
-
-    // top3 list
-    const top3div = document.getElementById('top3');
-    top3div.innerHTML = '';
-    items.forEach(it => {
-        const row = document.createElement('div');
-        row.className = 'qrt-row';
-        row.innerHTML = `<div><strong>${it.name}</strong><div class="muted" style="font-size:13px">score: ${it.score}</div></div><div style="width:180px"><div class="bar"><div class="bar-fill" style="width:${it.pct}%"></div></div><div style="text-align:right;font-weight:700">${it.pct}%</div></div>`;
-        top3div.appendChild(row);
-    })
-
-}
-
-document.getElementById('analyze').addEventListener('click', analyze);
-document.getElementById('reset').addEventListener('click', () => {
-    document.getElementById('title').value = ''; document.getElementById('desc').value = '';['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].forEach(id => document.getElementById(id).checked = false); document.getElementById('product').selectedIndex = 0; document.getElementById('impact').selectedIndex = 0; document.getElementById('prediction').style.display = 'none';
+    e.target.value = value;
 });
 
-function downloadHTML() {
-    const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'MVP_QRT_Aderencia.html'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+document.getElementById('categoria').addEventListener('change', function () {
+    const subcatContainer = document.getElementById('subcategoria-container');
+    const subcatCheckboxes = document.getElementById('subcategoria-checkboxes');
+    const resultado = document.getElementById('resultado');
+
+    resultado.classList.add('hidden');
+
+    if (this.value) {
+        subcatCheckboxes.innerHTML = '';
+
+        subcategorias[this.value].forEach((sub, index) => {
+            setTimeout(() => {
+                const checkboxItem = document.createElement('div');
+                checkboxItem.className = 'checkbox-item';
+                checkboxItem.style.animationDelay = `${index * 0.1}s`;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `sub-${index}`;
+                checkbox.value = sub.toLowerCase().replace(/\s+/g, '-');
+                checkbox.addEventListener('change', function () {
+                    if (this.checked) {
+                        checkboxItem.classList.add('checked');
+                    } else {
+                        checkboxItem.classList.remove('checked');
+                    }
+                });
+
+                const label = document.createElement('label');
+                label.htmlFor = `sub-${index}`;
+                label.textContent = sub;
+
+                checkboxItem.appendChild(checkbox);
+                checkboxItem.appendChild(label);
+
+                checkboxItem.addEventListener('click', function (e) {
+                    if (e.target !== checkbox) {
+                        checkbox.click();
+                    }
+                });
+
+                subcatCheckboxes.appendChild(checkboxItem);
+            }, index * 100);
+        });
+
+        subcatContainer.classList.remove('hidden');
+    } else {
+        subcatContainer.classList.add('hidden');
+        subcatCheckboxes.innerHTML = '';
+    }
+});
+
+function analisarSolicitacao() {
+    const nome = document.getElementById('nome').value.trim();
+    const resumo = document.getElementById('resumo').value.trim();
+    const classificacaoRadio = document.querySelector('input[name="classificacao"]:checked');
+    const categoria = document.getElementById('categoria').value;
+    const resultado = document.getElementById('resultado');
+
+    if (!nome || !resumo || !classificacaoRadio || !categoria) {
+        alert('Por favor, preencha todos os campos obrigatórios (Nome, Resumo, Classificação e Categoria).');
+        return;
+    }
+
+    const classificacao = classificacaoRadio.value;
+
+    const checkboxes = document.querySelectorAll('#subcategoria-checkboxes input[type="checkbox"]:checked');
+
+    if (checkboxes.length === 0) {
+        alert('Por favor, selecione pelo menos uma subcategoria.');
+        return;
+    }
+
+    const mapping = qrtMapping[categoria];
+
+    if (!mapping) {
+        resultado.innerHTML = `
+                    <div class="warning-panel">
+                        <h4>⚠️ Categoria não mapeada</h4>
+                        <p>Esta solicitação precisará ser <strong>triada manualmente</strong> pela equipe de suporte.</p>
+                        <p style="margin-top: 10px;">O sistema ainda não possui mapeamento inteligente para esta categoria.</p>
+                    </div>
+                `;
+        resultado.classList.remove('hidden');
+        return;
+    }
+
+    const selectedSubcats = Array.from(checkboxes).map(cb =>
+        cb.parentElement.querySelector('label').textContent
+    ).join(', ');
+
+    const classificacaoLabels = {
+        'incidente': 'Incidente',
+        'falha-sistemica': 'Falha Sistêmica',
+        'requisicao': 'Requisição de Serviço',
+        'solicitacao': 'Solicitação de Análise',
+        'duvida': 'Dúvidas'
+    };
+    const classificacaoText = classificacaoLabels[classificacao];
+
+    setTimeout(() => {
+        resultado.innerHTML = `
+                    <div class="result-panel">
+                        <div class="result-header">
+                            🎯 Análise Concluída
+                        </div>
+                        <div class="probability-text">${mapping.prob}%</div>
+                        <div class="probability-bar">
+                            <div class="probability-fill" style="width: ${mapping.prob}%"></div>
+                        </div>
+                        <div style="font-size: 14px; opacity: 0.95; margin-bottom: 16px;">
+                            Probabilidade de direcionamento correto
+                        </div>
+                        <div class="result-details">
+                            <div class="result-label">QRT Recomendado:</div>
+                            <div class="result-value">${mapping.qrt}</div>
+                        </div>
+                        <div class="result-details" style="margin-top: 12px;">
+                            <div class="result-label">Solicitante:</div>
+                            <div class="result-value">${nome}</div>
+                        </div>
+                        <div class="result-details" style="margin-top: 12px;">
+                            <div class="result-label">Classificação:</div>
+                            <div class="result-value">${classificacaoText}</div>
+                        </div>
+                        <div class="result-details" style="margin-top: 12px;">
+                            <div class="result-label">Categoria:</div>
+                            <div class="result-value">${document.getElementById('categoria').options[document.getElementById('categoria').selectedIndex].text}</div>
+                        </div>
+                        <div class="result-details" style="margin-top: 12px;">
+                            <div class="result-label">Subcategorias Selecionadas:</div>
+                            <div class="result-value" style="font-size: 14px;">${selectedSubcats}</div>
+                        </div>
+                        <div style="margin-top: 16px; font-size: 13px; opacity: 0.9;">
+                            ✅ Este chamado será automaticamente direcionado para a equipe correta, reduzindo o tempo de triagem e análise.
+                        </div>
+                    </div>
+                `;
+        resultado.classList.remove('hidden');
+        resultado.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 300);
 }
