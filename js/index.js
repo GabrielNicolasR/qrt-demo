@@ -54,7 +54,7 @@ const qrtMapping = {
     'erro-cotas': { qrt: 'QRT-Fundos', prob: 95 },
     'erro-boletar': { qrt: 'QRT-Fundos', prob: 95 },
     'erro-integracao': { qrt: 'QRT-Fundos', prob: 90 },
-    'gestor-sem-permissao': { qrt: 'QRT-Fundos', prob: 75 },
+    'gestor-sem-permissao': { qrt: 'QRT-Permissionamento', prob: 75 },
     'erro-participantes': { qrt: 'QRT-Investidor', prob: 92 },
     'validacao-procuracoes': { qrt: 'QRT-Investidor', prob: 95 },
     'extrato-financeiro': { qrt: 'QRT-Banking', prob: 98 }
