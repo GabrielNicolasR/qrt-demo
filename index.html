@@ -35,46 +35,36 @@
                 <label>Resumo <span class="required">*</span></label>
                 <textarea id="resumo" placeholder="Descreva brevemente o problema ou solicitação"></textarea>
             </div>
-
+            
             <div class="form-group">
                 <label>Classificação <span class="required">*</span></label>
-                <div class="hint" style="margin-bottom: 12px;">Selecione o tipo de solicitação conforme a urgência e impacto</div>
-                <div class="classificacao-grid">
-                    <div class="classificacao-item">
-                        <input type="radio" id="incidente" name="classificacao" value="incidente">
-                        <label for="incidente" class="classificacao-label">Incidente</label>
-                    </div>
-                    <div class="classificacao-item">
-                        <input type="radio" id="falha-sistemica" name="classificacao" value="falha-sistemica">
-                        <label for="falha-sistemica" class="classificacao-label">Falha Sistêmica</label>
-                    </div>
-                    <div class="classificacao-item">
-                        <input type="radio" id="requisicao" name="classificacao" value="requisicao">
-                        <label for="requisicao" class="classificacao-label">Requisição de Serviço</label>
-                    </div>
-                    <div class="classificacao-item">
-                        <input type="radio" id="solicitacao" name="classificacao" value="solicitacao">
-                        <label for="solicitacao" class="classificacao-label">Solicitação de Análise</label>
-                    </div>
-                    <div class="classificacao-item">
-                        <input type="radio" id="duvida" name="classificacao" value="duvida">
-                        <label for="duvida" class="classificacao-label">Dúvidas</label>
-                    </div>
-                </div>
+                <select id="classificacao">
+                    <option value="">Selecione uma classificação...</option>
+                    <option value="incidente">Incidente</option>
+                    <option value="falha-sistemica">Falha Sistêmica</option>
+                    <option value="requisicao">Requisição de Serviço</option>
+                    <option value="solicitacao">Solicitação de Análise</option>
+                    <option value="duvida">Dúvidas</option>
+                </select>
             </div>
 
-            <div class="form-group">
-                <label>Categoria <span class="required">*</span></label>
-                <select id="categoria">
-                    <option value="">Selecione uma categoria...</option>
-                    <option value="erro-cotas">Erro em Cotas</option>
-                    <option value="erro-boletar">Erro ao Boletar</option>
-                    <option value="gestor-sem-permissao">Gestor sem Permissão</option>
-                    <option value="erro-integracao">Erro de Integração Boleta</option>
-                    <option value="erro-participantes">Erro Participantes</option>
-                    <option value="validacao-procuracoes">Validação de Procurações</option>
-                    <option value="extrato-financeiro">Extrato Financeiro</option>
-                </select>
+            <div class="info-panel">
+                <h4>📋 Entenda as Classificações</h4>
+                <div class="info-item">
+                    <strong>• Incidente:</strong> Problema crítico que afeta operações imediatamente.
+                </div>
+                <div class="info-item">
+                    <strong>• Falha Sistêmica:</strong> Erro no sistema que interrompe um serviço ou fluxo.
+                </div>
+                <div class="info-item">
+                    <strong>• Requisição de Serviço:</strong> Solicitação de uma ação ou serviço específico.
+                </div>
+                <div class="info-item">
+                    <strong>• Solicitação de Análise:</strong> Pedido de avaliação técnica ou investigação.
+                </div>
+                <div class="info-item">
+                    <strong>• Dúvidas:</strong> Questões gerais sobre processos, sistemas ou procedimentos.
+                </div>
             </div>
 
             <div class="form-group hidden" id="subcategoria-container">
@@ -82,8 +72,6 @@
                 <div class="hint" style="margin-bottom: 12px;">Selecione todas as opções que se aplicam</div>
                 <div id="subcategoria-checkboxes"></div>
             </div>
-
-
 
             <div id="resultado" class="hidden"></div>
 
